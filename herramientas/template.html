@@ -147,6 +147,7 @@ const answers = {};
 let step = -1; // -1 portada, 0..n-1 preguntas, "form", "result"
 let user = { nombre: "", email: "" };
 let unlocked = false;
+let paid = null; // texto completo que entrega el script tras el pago
 const app = document.getElementById("app");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace("ermitano", "ermitanio");
@@ -265,7 +266,8 @@ function renderResult() {
   result = result || score();
   const a = result;
   const img = cardImg(a.carta);
-  const paras = a.texto.match(/[^.!?]+[.!?]+["”]?\s*/g) || [a.texto];
+  const src = a.teaser || a.texto;
+  const paras = src.match(/[^.!?]+[.!?]+["”]?\s*/g) || [src];
   let teaser = ""; for (const s of paras) { if (teaser.length > 420) break; teaser += s; }
   const p = DATA.productos;
   app.innerHTML = `
@@ -351,15 +353,37 @@ async function pagar(producto, telefono) {
 }
 
 function fullResult(a) {
-  const paras = a.texto.split(/(?<=[.!?]["”]?)\s+(?=[A-ZÁÉÍÓÚÑ¿"“])/).reduce((acc, s, i) => {
+  const F = paid || a;
+  const duelo = paid ? paid.mensaje_duelo : (hadLoss() ? DATA.mensaje_duelo : "");
+  const paras = F.texto.split(/(?<=[.!?]["”]?)\s+(?=[A-ZÁÉÍÓÚÑ¿"“])/).reduce((acc, s, i) => {
     const k = Math.floor(i / 4); (acc[k] = acc[k] || []).push(s); return acc;
   }, []).map(g => `<p>${esc(g.join(" "))}</p>`).join("");
   return `
     <div class="full stack" style="gap:0">${paras}</div>
-    <div class="block"><span class="eyebrow">El mensaje de tu carta</span><h3>${esc(a.carta)}</h3><p>${esc(a.mensaje_extendido)}</p></div>
-    ${hadLoss() ? `<div class="block"><span class="eyebrow">Para quien partió</span><p>${esc(DATA.mensaje_duelo)}</p></div>` : ""}
+    <div class="block"><span class="eyebrow">El mensaje de tu carta</span><h3>${esc(a.carta)}</h3><p>${esc(F.mensaje_extendido)}</p></div>
+    ${duelo ? `<div class="block"><span class="eyebrow">Para quien partió</span><p>${esc(duelo)}</p></div>` : ""}
     <p class="notice">${esc(DATA.aviso)}</p>
     <button class="btn ghost" id="again">Hacer el test otra vez</button>`;
+}
+
+async function traerResultado(intento) {
+  const qs = new URLSearchParams(location.search);
+  const d = document.getElementById("demo");
+  d.hidden = false;
+  d.textContent = "Confirmando tu pago con Mercado Pago…";
+  try {
+    const url = PAGOS.endpoint + "?accion=resultado&ref=" + encodeURIComponent(qs.get("ref") || "") + "&payment_id=" + encodeURIComponent(qs.get("payment_id") || "");
+    const j = await (await fetch(url)).json();
+    if (j.estado === "pagado") {
+      paid = j; unlocked = true; render();
+      const n = document.createElement("p");
+      n.className = "demo"; n.textContent = "Pago recibido. También te enviamos este mensaje en PDF a " + user.email + ".";
+      app.firstElementChild.insertBefore(n, app.firstElementChild.children[1]);
+      return;
+    }
+  } catch (e) {}
+  if (intento < 5) return setTimeout(() => traerResultado(intento + 1), 3000);
+  d.textContent = "Tu pago se está procesando. En cuanto Mercado Pago lo confirme, te enviamos el mensaje completo por email a " + user.email + ".";
 }
 
 // Vuelta desde Mercado Pago: ?pago=ok / pendiente / error
@@ -369,15 +393,16 @@ function fullResult(a) {
   if (saved) {
     Object.assign(answers, saved.answers); user = saved.user;
     result = DATA.arquetipos.find(a => a.id === saved.resultId);
-    unlocked = pago === "ok"; step = "result";
+    unlocked = pago === "ok" && !PAGOS.endpoint; step = "result";
   }
   render();
+  if (saved && pago === "ok" && PAGOS.endpoint) return traerResultado(1);
   if (saved && pago !== "ok") {
     const d = document.getElementById("demo");
     d.hidden = false;
     d.textContent = pago === "pendiente" ? "Tu pago está pendiente. Cuando Mercado Pago lo confirme, te enviamos el mensaje por email." : "El pago no se completó. Podés intentarlo de nuevo.";
   }
-  if (saved && pago === "ok") {
+  if (saved && pago === "ok" && !PAGOS.endpoint) {
     const n = document.createElement("p");
     n.className = "demo"; n.textContent = "Pago recibido. También te enviamos este mensaje en PDF a " + user.email + ".";
     app.firstElementChild.insertBefore(n, app.firstElementChild.children[1]);

@@ -7,6 +7,8 @@
  * 2. Mercado Pago avisa aquí cuando hay un pago (webhook). Se comprueba el pago con la
  *    API de Mercado Pago, se marca la fila como pagada y se envía el PDF por email.
  *    Si es el Mensaje personal, además te llega un email con el WhatsApp del comprador.
+ * 3. Al volver de Mercado Pago, la web pide aquí el texto completo (doGet, accion "resultado").
+ *    Solo se entrega si el pago está aprobado: los textos no están en la web.
  *
  * Configuración (Proyecto > Configuración del proyecto > Propiedades de la secuencia de comandos):
  *   MP_ACCESS_TOKEN  Access token de producción de Mercado Pago (Tu negocio > Credenciales)
@@ -64,7 +66,7 @@ function crearPago(b) {
     items: [{ title: prod.titulo, quantity: 1, unit_price: prod.ars, currency_id: 'ARS' }],
     payer: { email: b.email, name: b.nombre },
     external_reference: id,
-    back_urls: { success: sitio + '?pago=ok', pending: sitio + '?pago=pendiente', failure: sitio + '?pago=error' },
+    back_urls: { success: sitio + '?pago=ok&ref=' + id, pending: sitio + '?pago=pendiente&ref=' + id, failure: sitio + '?pago=error&ref=' + id },
     auto_return: 'approved',
     notification_url: ScriptApp.getService().getUrl(),
   };
@@ -75,7 +77,28 @@ function crearPago(b) {
   });
   const res = JSON.parse(r.getContentText());
   if (!res.init_point) return json({ error: 'Mercado Pago no creó el pago', detalle: res.message || '' });
-  return json({ url: res.init_point });
+  return json({ url: res.init_point, ref: id });
+}
+
+// La web pide el resultado completo al volver de Mercado Pago.
+function doGet(e) {
+  const q = e.parameter || {};
+  if (q.accion !== 'resultado' || !q.ref) return json({ error: 'Pedido no válido' });
+  // Si el aviso de Mercado Pago todavía no llegó, se comprueba el pago ahora.
+  if (q.payment_id) procesarPago(String(q.payment_id));
+  const datos = hoja().getDataRange().getValues();
+  const col = n => COLUMNAS.indexOf(n);
+  const fila = datos.find((f, i) => i > 0 && f[col('id')] === q.ref);
+  if (!fila) return json({ error: 'No encontramos tu pedido' });
+  if (fila[col('estado')] !== 'pagado') return json({ estado: 'pendiente' });
+  const arq = ARQUETIPOS.find(a => a.id === Number(fila[col('arquetipo_id')]));
+  return json({
+    estado: 'pagado',
+    arquetipo_id: arq.id,
+    texto: arq.texto,
+    mensaje_extendido: arq.mensaje_extendido,
+    mensaje_duelo: fila[col('perdida')] === 'si' ? MENSAJE_DUELO : '',
+  });
 }
 
 function procesarPago(pagoId) {
@@ -84,13 +107,13 @@ function procesarPago(pagoId) {
   });
   const p = JSON.parse(r.getContentText());
   if (p.status !== 'approved' || !p.external_reference) return;
+  const col = n => COLUMNAS.indexOf(n);
 
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     const sh = hoja();
     const datos = sh.getDataRange().getValues();
-    const col = n => COLUMNAS.indexOf(n);
     for (let i = 1; i < datos.length; i++) {
       const fila = datos[i];
       if (fila[col('id')] !== p.external_reference) continue;

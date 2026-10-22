@@ -5,6 +5,15 @@ out=base+'/sitio'; os.makedirs(out,exist_ok=True)
 shutil.copytree(base+'/web/img',out+'/img',dirs_exist_ok=True)
 cards={f[:-5].replace('-',' '):'img/'+f for f in os.listdir(out+'/img') if f!='portada.webp'}
 data=json.load(open(base+'/contenido-test-v2.json'))
+# Los textos completos no van en la web: los entrega el script de Google tras el pago.
+import re
+for a in data['arquetipos']:
+  teaser=''
+  for s in re.findall(r'[^.!?]+[.!?]+["”]?\s*', a['texto']):
+    if len(teaser)>420: break
+    teaser+=s
+  a['teaser']=teaser; del a['texto']; del a['mensaje_extendido']
+data['mensaje_duelo']=''
 pagos=json.load(open(base+'/sitio-pagos.json')) if os.path.exists(base+'/sitio-pagos.json') else {'endpoint':''}
 t=open(os.path.dirname(os.path.abspath(__file__))+'/template.html').read()
 t=t.replace('__DATA__',json.dumps(data,ensure_ascii=False)).replace('__CARDS__',json.dumps(cards,ensure_ascii=False)).replace('__COVER__','"img/portada.webp"').replace('__PAGOS__',json.dumps(pagos))
