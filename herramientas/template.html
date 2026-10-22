@@ -1,0 +1,386 @@
+<title>Test de Alma</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: una sola columna estrecha, una pregunta por pantalla, como una carta sobre la mesa de noche */
+:root {
+  --night: #15111f;
+  --surface: #211b30;
+  --line: #3a3150;
+  --ink: #efe9f6;
+  --muted: #a99fbd;
+  --gold: #e8c46c;
+  --violet: #7a3aa6;
+  --violet-hi: #9150c0;
+  --display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--night);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 34rem;
+  margin: 0 auto;
+  min-height: 100%;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: 2.6rem; }
+h2 { font-size: 1.9rem; }
+p { margin: 0; }
+.eyebrow { font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+
+/* barra superior */
+.top { display: flex; align-items: center; gap: 12px; min-height: 40px; }
+.back { background: none; border: 0; color: var(--muted); font: inherit; font-size: .9rem; padding: 8px 4px; cursor: pointer; }
+.back:disabled { visibility: hidden; }
+.progress { flex: 1; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.progress > i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .35s ease; }
+.count { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+
+/* portada */
+.cover { border-radius: 14px; overflow: hidden; aspect-ratio: 4 / 3; max-width: 100%; background: var(--surface); }
+.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.facts { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: .9rem; }
+.notice { font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+
+/* botones */
+.btn {
+  appearance: none; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--violet); color: #fff; font: inherit; font-weight: 600;
+  padding: 15px 22px; width: 100%; transition: background .2s;
+}
+.btn:hover { background: var(--violet-hi); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.gold { background: var(--gold); color: #24182f; }
+.btn:focus-visible, .opt:focus-visible, .back:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+/* preguntas */
+.section-tag { display: flex; align-items: center; gap: 10px; }
+.section-tag::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.q { font-family: var(--display); font-size: 1.85rem; font-weight: 600; line-height: 1.2; text-wrap: balance; }
+.opts { display: grid; gap: 10px; }
+.opt {
+  text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 15px 16px; display: flex; gap: 12px; align-items: baseline;
+  transition: border-color .15s, background .15s;
+}
+.opt b { font-family: var(--display); color: var(--gold); font-size: 1.1rem; font-weight: 600; min-width: 1em; }
+.opt:hover { border-color: var(--muted); }
+.opt.sel { border-color: var(--gold); background: #2b2340; }
+.interlude { font-family: var(--display); font-style: italic; font-size: 1.35rem; color: var(--muted); }
+
+/* formulario */
+label { font-size: .9rem; color: var(--muted); display: block; margin-bottom: 6px; }
+input {
+  width: 100%; font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px;
+}
+.err { color: #f2a5a5; font-size: .85rem; min-height: 1.2em; }
+
+/* resultado */
+.reveal { display: grid; grid-template-columns: 112px 1fr; gap: 18px; align-items: center; }
+.card {
+  width: 112px; aspect-ratio: 2 / 3.4; max-width: 100%; border-radius: 10px; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--gold);
+  display: grid; place-items: center; text-align: center; font-family: var(--display); color: var(--gold); padding: 8px;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card:has(img) { padding: 0; }
+.reveal > div { min-width: 0; }
+.arq { font-size: 2.2rem; }
+.sig { font-style: italic; font-family: var(--display); font-size: 1.15rem; color: var(--muted); }
+.teaser { position: relative; }
+.teaser .fade { max-height: 9.5em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent); }
+.offers { display: grid; gap: 12px; }
+.offer { border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; background: var(--surface); }
+.offer.featured { border-color: var(--gold); }
+.offer-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.offer h3 { font-size: 1.45rem; }
+.price { font-family: var(--display); font-size: 1.9rem; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.offer ul { margin: 0; padding-left: 1.1em; color: var(--muted); font-size: .92rem; display: grid; gap: 4px; }
+.badge { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: #24182f; background: var(--gold); border-radius: 999px; padding: 3px 9px; font-weight: 600; align-self: flex-start; }
+.demo { font-size: .82rem; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; padding: 12px 14px; }
+.demo button { background: none; border: 0; color: var(--gold); font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
+.full p + p { margin-top: 12px; }
+.block { border-top: 1px solid var(--line); padding-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.block h3 { font-size: 1.4rem; color: var(--gold); }
+
+.screen { animation: in .35s ease both; }
+@keyframes in { from { opacity: .4; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .screen { animation: none; } .progress > i { transition: none; } }
+@media (max-width: 380px) { .reveal { grid-template-columns: 1fr; } .card { width: 120px; } h1 { font-size: 2.2rem; } .q { font-size: 1.6rem; } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+const DATA = __DATA__;
+const CARDS = __CARDS__;
+const COVER = __COVER__;
+// Dirección del Apps Script que crea el pago en Mercado Pago. Vacía = modo prototipo.
+const PAGOS = __PAGOS__;
+const ars = n => "$ " + n.toLocaleString("es-AR");
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+
+const qs = DATA.secciones.flatMap(s => s.preguntas.map(q => ({ ...q, sec: s })));
+const LOSS_FILTER = 17;
+const answers = {};
+let step = -1; // -1 portada, 0..n-1 preguntas, "form", "result"
+let user = { nombre: "", email: "" };
+let unlocked = false;
+const app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace("ermitano", "ermitanio");
+const cardImg = carta => CARDS[norm(carta)] || "";
+const hadLoss = () => answers[LOSS_FILTER] !== undefined && answers[LOSS_FILTER] !== 3;
+
+function visible() {
+  return qs.filter(q => !(q.id > LOSS_FILTER && answers[LOSS_FILTER] === 3));
+}
+
+function render() {
+  window.scrollTo(0, 0);
+  if (step === -1) return renderIntro();
+  if (step === "form") return renderForm();
+  if (step === "result") return renderResult();
+  renderQuestion();
+}
+
+function renderIntro() {
+  app.innerHTML = `
+  <div class="screen stack" style="gap:22px">
+    ${COVER ? `<div class="cover"><img src="${COVER}" alt=""></div>` : ""}
+    <span class="eyebrow">Camino de vida</span>
+    <h1>${esc(DATA.titulo)}</h1>
+    <p class="muted">${esc(DATA.descripcion)} Al final vas a conocer tu arquetipo y la carta del tarot que te acompaña en este momento.</p>
+    <div class="facts"><span>16 preguntas</span><span>3–4 minutos</span><span>22 arquetipos posibles</span></div>
+    <button class="btn" id="go">Empezar el test</button>
+    <p class="notice">${esc(DATA.aviso)}</p>
+  </div>`;
+  document.getElementById("go").onclick = () => { step = 0; render(); };
+}
+
+function renderQuestion() {
+  const list = visible();
+  const q = list[step];
+  const total = hadLoss() || answers[LOSS_FILTER] === undefined ? list.length : list.length;
+  const firstOfSection = step === 0 || list[step - 1].sec.id !== q.sec.id;
+  app.innerHTML = `
+  <div class="top">
+    <button class="back" id="back">← Atrás</button>
+    <div class="progress"><i style="width:${Math.round((step / total) * 100)}%"></i></div>
+    <span class="count">${step + 1} / ${total}</span>
+  </div>
+  <div class="screen stack" style="gap:18px">
+    <div class="section-tag"><span class="eyebrow">${esc(q.sec.nombre)}</span></div>
+    ${firstOfSection && q.sec.intro ? `<p class="interlude">${esc(q.sec.intro)}</p>` : ""}
+    <p class="q" id="qtext">${esc(q.texto)}</p>
+    <div class="opts" role="group" aria-labelledby="qtext">
+      ${q.opciones.map((o, i) => `<button class="opt${answers[q.id] === i ? " sel" : ""}" data-i="${i}"><b>${"ABCD"[i]}</b><span>${esc(o.texto)}</span></button>`).join("")}
+    </div>
+  </div>`;
+  document.getElementById("back").onclick = () => { step = step === 0 ? -1 : step - 1; render(); };
+  app.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+    answers[q.id] = +b.dataset.i;
+    b.classList.add("sel");
+    setTimeout(() => {
+      const l = visible();
+      step = step + 1 < l.length ? step + 1 : "form";
+      render();
+    }, 220);
+  });
+}
+
+function renderForm() {
+  app.innerHTML = `
+  <div class="top">
+    <button class="back" id="back">← Atrás</button>
+    <div class="progress"><i style="width:100%"></i></div>
+    <span class="count">Listo</span>
+  </div>
+  <form class="screen stack" id="f" novalidate style="gap:18px">
+    <span class="eyebrow">Tu resultado está listo</span>
+    <h2>¿A quién le enviamos tu mensaje?</h2>
+    <p class="muted">Te mostramos tu arquetipo ahora y te enviamos una copia por email.</p>
+    <div><label for="nombre">Tu nombre</label><input id="nombre" autocomplete="given-name" value="${esc(user.nombre)}"></div>
+    <div><label for="email">Tu email</label><input id="email" type="email" autocomplete="email" value="${esc(user.email)}"></div>
+    <p class="err" id="err"></p>
+    <button class="btn" type="submit">Ver mi arquetipo</button>
+  </form>`;
+  document.getElementById("back").onclick = () => { step = visible().length - 1; render(); };
+  document.getElementById("f").addEventListener("submit", e => {
+    e.preventDefault();
+    const n = document.getElementById("nombre").value.trim();
+    const m = document.getElementById("email").value.trim();
+    const err = document.getElementById("err");
+    if (!n) { err.textContent = "Escribí tu nombre para personalizar el mensaje."; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)) { err.textContent = "Revisá el email: parece que le falta algo."; return; }
+    user = { nombre: n, email: m };
+    step = "result"; render();
+  });
+}
+
+function score() {
+  const pts = {}, avail = {};
+  for (const q of visible()) {
+    const a = answers[q.id];
+    if (a === undefined) continue;
+    const present = new Set(q.opciones.flatMap(o => o.arquetipos));
+    present.forEach(id => avail[id] = (avail[id] || 0) + 1);
+    q.opciones[a].arquetipos.forEach(id => pts[id] = (pts[id] || 0) + 1);
+  }
+  const exp = DATA.puntuacion.exponente;
+  let best = -1, winners = [];
+  for (const id in avail) {
+    const s = (pts[id] || 0) / Math.pow(avail[id], exp);
+    if (s > best + 1e-9) { best = s; winners = [+id]; }
+    else if (Math.abs(s - best) < 1e-9) winners.push(+id);
+  }
+  // desempate estable: el mismo set de respuestas siempre da el mismo arquetipo
+  const seed = Object.values(answers).join("").split("").reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  return DATA.arquetipos.find(a => a.id === winners[seed % winners.length]);
+}
+
+let result = null;
+function renderResult() {
+  result = result || score();
+  const a = result;
+  const img = cardImg(a.carta);
+  const paras = a.texto.match(/[^.!?]+[.!?]+["”]?\s*/g) || [a.texto];
+  let teaser = ""; for (const s of paras) { if (teaser.length > 420) break; teaser += s; }
+  const p = DATA.productos;
+  app.innerHTML = `
+  <div class="screen stack" style="gap:24px">
+    <span class="eyebrow">${esc(user.nombre)}, tu arquetipo es</span>
+    <div class="reveal">
+      <div class="card">${img ? `<img src="${img}" alt="Carta ${esc(a.carta)}">` : esc(a.carta)}</div>
+      <div class="stack" style="gap:8px">
+        <h2 class="arq">${esc(a.nombre)}</h2>
+        <p class="small muted">Tu carta: <span style="color:var(--gold)">${esc(a.carta)}</span></p>
+        <p class="sig">${esc(a.significado)}</p>
+      </div>
+    </div>
+    ${unlocked ? fullResult(a) : `
+    <div class="teaser"><div class="fade">${esc(teaser)}</div></div>
+    <div class="stack" style="gap:6px">
+      <h3 style="font-size:1.5rem">Tu mensaje completo te espera</h3>
+      <p class="muted small">Elegí cómo querés recibirlo.</p>
+    </div>
+    <div class="offers">
+      <div class="offer">
+        <div class="offer-head"><h3>Mensaje del alma</h3><span class="price">${ars(p.basico.precio_ars)}</span></div>
+        <ul><li>Tu arquetipo explicado en profundidad</li><li>El mensaje de ${esc(a.carta)} para vos</li>${hadLoss() ? "<li>Un mensaje para tu duelo</li>" : ""}<li>PDF en tu email al instante</li></ul>
+        <button class="btn ghost" data-buy="basico">Quiero mi mensaje</button>
+      </div>
+      <div class="offer featured">
+        <span class="badge">Recomendado</span>
+        <div class="offer-head"><h3>Mensaje personal</h3><span class="price">${ars(p.personalizado.precio_ars)}</span></div>
+        <ul><li>Todo lo del Mensaje del alma</li><li>Audio guiado de tu arquetipo</li><li>Un audio grabado solo para vos, por WhatsApp, en 48 horas</li></ul>
+        <button class="btn gold" data-buy="personalizado">Quiero mi mensaje personal</button>
+      </div>
+    </div>
+    <div class="demo" id="demo" hidden></div>
+    <p class="notice">${esc(DATA.aviso)}</p>`}
+  </div>`;
+  app.querySelectorAll("[data-buy]").forEach(b => b.onclick = () => {
+    if (PAGOS.endpoint) return checkout(b.dataset.buy);
+    const d = document.getElementById("demo");
+    d.hidden = false;
+    if (!PAGOS.demo) { d.textContent = "Los pagos se habilitan en los próximos días. Guardá esta página y volvé pronto."; return; }
+    d.innerHTML = `Prototipo: el pago todavía no está conectado. <button id="unlock">Ver el resultado completo como si hubieras pagado</button>`;
+    document.getElementById("unlock").onclick = () => { unlocked = true; render(); };
+    d.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  const again = document.getElementById("again");
+  if (again) again.onclick = () => { for (const k in answers) delete answers[k]; result = null; unlocked = false; step = -1; render(); };
+}
+
+function checkout(producto) {
+  const d = document.getElementById("demo");
+  d.hidden = false;
+  if (producto === "personalizado") {
+    d.innerHTML = `<form id="wa" class="stack" style="gap:10px" novalidate>
+      <label for="tel">Tu WhatsApp, con código de país (ej. +54 9 11 1234 5678)</label>
+      <input id="tel" type="tel" autocomplete="tel" inputmode="tel">
+      <p class="err" id="werr"></p>
+      <button class="btn gold" type="submit">Ir a pagar con Mercado Pago</button></form>`;
+    document.getElementById("wa").addEventListener("submit", e => {
+      e.preventDefault();
+      const tel = document.getElementById("tel").value.trim();
+      if (tel.replace(/\D/g, "").length < 8) { document.getElementById("werr").textContent = "Revisá el número: necesitamos tu WhatsApp para enviarte el audio."; return; }
+      pagar(producto, tel);
+    });
+    document.getElementById("tel").focus();
+  } else pagar(producto, "");
+  d.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function pagar(producto, telefono) {
+  const d = document.getElementById("demo");
+  d.textContent = "Preparando tu pago…";
+  store.set("alma", { answers, user, resultId: result.id });
+  try {
+    const r = await fetch(PAGOS.endpoint, { method: "POST", body: JSON.stringify({
+      accion: "crear", producto, nombre: user.nombre, email: user.email, telefono,
+      arquetipo_id: result.id, perdida: hadLoss(), respuestas: answers }) });
+    const j = await r.json();
+    if (!j.url) throw new Error(j.error || "sin url");
+    location.href = j.url;
+  } catch (e) {
+    d.textContent = "No pudimos abrir Mercado Pago. Revisá tu conexión e intentá de nuevo en unos segundos.";
+  }
+}
+
+function fullResult(a) {
+  const paras = a.texto.split(/(?<=[.!?]["”]?)\s+(?=[A-ZÁÉÍÓÚÑ¿"“])/).reduce((acc, s, i) => {
+    const k = Math.floor(i / 4); (acc[k] = acc[k] || []).push(s); return acc;
+  }, []).map(g => `<p>${esc(g.join(" "))}</p>`).join("");
+  return `
+    <div class="full stack" style="gap:0">${paras}</div>
+    <div class="block"><span class="eyebrow">El mensaje de tu carta</span><h3>${esc(a.carta)}</h3><p>${esc(a.mensaje_extendido)}</p></div>
+    ${hadLoss() ? `<div class="block"><span class="eyebrow">Para quien partió</span><p>${esc(DATA.mensaje_duelo)}</p></div>` : ""}
+    <p class="notice">${esc(DATA.aviso)}</p>
+    <button class="btn ghost" id="again">Hacer el test otra vez</button>`;
+}
+
+// Vuelta desde Mercado Pago: ?pago=ok / pendiente / error
+(function () {
+  const pago = new URLSearchParams(location.search).get("pago");
+  const saved = pago && store.get("alma");
+  if (saved) {
+    Object.assign(answers, saved.answers); user = saved.user;
+    result = DATA.arquetipos.find(a => a.id === saved.resultId);
+    unlocked = pago === "ok"; step = "result";
+  }
+  render();
+  if (saved && pago !== "ok") {
+    const d = document.getElementById("demo");
+    d.hidden = false;
+    d.textContent = pago === "pendiente" ? "Tu pago está pendiente. Cuando Mercado Pago lo confirme, te enviamos el mensaje por email." : "El pago no se completó. Podés intentarlo de nuevo.";
+  }
+  if (saved && pago === "ok") {
+    const n = document.createElement("p");
+    n.className = "demo"; n.textContent = "Pago recibido. También te enviamos este mensaje en PDF a " + user.email + ".";
+    app.firstElementChild.insertBefore(n, app.firstElementChild.children[1]);
+  }
+})();
+</script>
