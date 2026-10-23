@@ -143,7 +143,7 @@ function enviarResultado(fila, col) {
     ', y tu carta, ' + arq.carta + '. Te dejamos tu mensaje completo en el PDF adjunto.\n';
   if (personal) cuerpo += '\nEn las próximas 48 horas te escribimos por WhatsApp con un audio grabado solo para vos.\n';
   cuerpo += '\nEste test es una herramienta de reflexión personal y no reemplaza la ayuda de un profesional.\n\nTest de Alma';
-  GmailApp.sendEmail(fila[col('email')], 'Tu mensaje del alma está listo', cuerpo, { attachments: [pdf], name: 'Test de Alma' });
+  GmailApp.sendEmail(fila[col('email')], 'Tu mensaje del alma está listo', cuerpo, { attachments: [pdf], name: 'Test de Alma', htmlBody: emailHtml(nombre, arq, personal) });
 
   if (personal && prop('AVISOS_EMAIL')) {
     GmailApp.sendEmail(prop('AVISOS_EMAIL'), 'Nuevo Mensaje personal: ' + nombre,
@@ -265,6 +265,30 @@ function pdfHtml(nombre, arq, perdida, producto, imgs) {
     '<p style="text-align:center;font-size:14pt;color:' + violeta + ';margin:0 0 30pt 0">Test de Alma</p>' +
     '<p style="font-size:8pt;color:' + suave + ';text-align:center;line-height:1.5;margin:0 30pt">Este mensaje es una experiencia de reflexión simbólica y acompañamiento espiritual. No constituye asesoramiento médico, psicológico, legal ni financiero. Si estás atravesando un momento que sentís que te supera, buscar acompañamiento profesional es un acto de amor propio.</p>' +
     '</body></html>';
+}
+
+function emailHtml(nombre, arq, personal) {
+  const violeta = '#4a2a6b', oro = '#b48a2c', suave = '#6d6378';
+  const img = imagen(slug(arq.carta));
+  return '<div style="background:#f3eef8;padding:24px 12px;font-family:Georgia,serif;color:#2b2433">' +
+    '<table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fbf8f2;border:1px solid ' + oro + ';border-radius:10px;overflow:hidden">' +
+    '<tr><td style="background:#1f1830;padding:26px 24px;text-align:center">' +
+    '<p style="margin:0;font-size:11px;letter-spacing:4px;color:#e8c46c">TEST DE ALMA</p>' +
+    '<p style="margin:8px 0 0;font-size:24px;color:#efe9f6">Tu mensaje está listo</p></td></tr>' +
+    '<tr><td style="padding:28px 28px 8px">' +
+    '<p style="font-size:20px;color:' + violeta + ';margin:0 0 14px">Hola ' + esc(nombre) + ',</p>' +
+    '<table cellpadding="0" cellspacing="0" style="margin:0 0 16px"><tr>' +
+    (img ? '<td style="padding-right:14px"><img src="' + img + '" width="70" style="border:1px solid ' + oro + ';border-radius:5px;display:block"></td>' : '') +
+    '<td><p style="margin:0;font-size:11px;letter-spacing:3px;color:' + oro + '">TU ARQUETIPO</p>' +
+    '<p style="margin:4px 0;font-size:20px;color:' + violeta + '">' + esc(arq.nombre) + '</p>' +
+    '<p style="margin:0;font-size:13px;font-style:italic;color:' + suave + '">Tu carta: ' + esc(arq.carta) + '</p></td></tr></table>' +
+    '<p style="font-size:15px;line-height:1.6;margin:0 0 12px">Preparamos tu mensaje con cuidado, a partir de lo que estás viviendo y de lo que tu alma necesita escuchar. <b>Lo encontrás adjunto en PDF.</b></p>' +
+    '<p style="font-size:15px;line-height:1.6;margin:0 0 12px">Te recomendamos leerlo en un momento tranquilo, sin apuro. Y si algo te resuena, guardalo. Es para vos.</p>' +
+    (personal ? '<p style="font-size:15px;line-height:1.6;margin:0 0 12px;background:#f2ecf7;border-left:3px solid ' + oro + ';padding:10px 12px">En las próximas <b>48 horas</b> te escribimos por WhatsApp con un audio grabado solo para vos.</p>' : '') +
+    '<p style="font-size:15px;font-style:italic;color:' + suave + ';margin:20px 0 4px">Con cariño,</p>' +
+    '<p style="font-size:16px;color:' + violeta + ';margin:0 0 20px">Test de Alma</p></td></tr>' +
+    '<tr><td style="background:#f2ecf7;padding:14px 28px;font-size:11px;line-height:1.5;color:' + suave + '">Este mensaje es una experiencia de reflexión simbólica y acompañamiento espiritual. No constituye asesoramiento médico, psicológico, legal ni financiero. Si estás atravesando un momento que sentís que te supera, buscar acompañamiento profesional es un acto de amor propio.</td></tr>' +
+    '</table></div>';
 }
 
 
