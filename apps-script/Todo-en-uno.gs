@@ -62,6 +62,15 @@ function crearPago(b) {
     JSON.stringify(b.respuestas || {}), 'pendiente', '', '']);
 
   const sitio = prop('SITIO_URL');
+  // Modo prueba: propiedad MODO_PRUEBA = si. Salta Mercado Pago, marca como pagado y envía el email.
+  if (prop('MODO_PRUEBA') === 'si') {
+    const sh = hoja(), n = sh.getLastRow(), col = k => COLUMNAS.indexOf(k);
+    sh.getRange(n, col('estado') + 1).setValue('pagado');
+    sh.getRange(n, col('pago_id') + 1).setValue('PRUEBA');
+    enviarResultado(sh.getRange(n, 1, 1, COLUMNAS.length).getValues()[0], col);
+    sh.getRange(n, col('enviado') + 1).setValue(new Date());
+    return json({ url: sitio + '?pago=ok&ref=' + id, ref: id });
+  }
   const pref = {
     items: [{ title: prod.titulo, quantity: 1, unit_price: prod.ars, currency_id: 'ARS' }],
     payer: { email: b.email, name: b.nombre },
