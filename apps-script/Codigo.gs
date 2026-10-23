@@ -147,12 +147,20 @@ function enviarResultado(fila, col) {
   const personal = fila[col('producto')] === 'personalizado';
   const html = pdfHtml(nombre, arq, perdida, fila[col('producto')]);
   const pdf = Utilities.newBlob(html, 'text/html', 'mensaje.html').getAs('application/pdf').setName('Tu mensaje del alma - ' + arq.nombre + '.pdf');
+  const adjuntos = [pdf];
+  // Mensaje personal: se adjunta el audio del arquetipo (audio/<id>.mp3 en la web), si ya existe.
+  if (personal) {
+    try {
+      const r = UrlFetchApp.fetch(prop('SITIO_URL') + 'audio/' + arq.id + '.mp3', { muteHttpExceptions: true });
+      if (r.getResponseCode() === 200) adjuntos.push(r.getBlob().setName('Audio - ' + arq.nombre + '.mp3'));
+    } catch (e) {}
+  }
 
   let cuerpo = 'Hola ' + nombre + ',\n\nGracias por hacer el Test de Alma. Tu arquetipo es ' + arq.nombre +
     ', y tu carta, ' + arq.carta + '. Te dejamos tu mensaje completo en el PDF adjunto.\n';
   if (personal) cuerpo += '\nEn las próximas 48 horas te escribimos por WhatsApp con un audio grabado solo para vos.\n';
   cuerpo += '\nEste test es una herramienta de reflexión personal y no reemplaza la ayuda de un profesional.\n\nTest de Alma';
-  GmailApp.sendEmail(fila[col('email')], 'Tu mensaje del alma está listo', cuerpo, { attachments: [pdf], name: 'Test de Alma', htmlBody: emailHtml(nombre, arq, personal) });
+  GmailApp.sendEmail(fila[col('email')], 'Tu mensaje del alma está listo', cuerpo, { attachments: adjuntos, name: 'Test de Alma', htmlBody: emailHtml(nombre, arq, personal) });
 
   if (personal && prop('AVISOS_EMAIL')) {
     GmailApp.sendEmail(prop('AVISOS_EMAIL'), 'Nuevo Mensaje personal: ' + nombre,
@@ -293,7 +301,7 @@ function emailHtml(nombre, arq, personal) {
     '<p style="margin:0;font-size:13px;font-style:italic;color:' + suave + '">Tu carta: ' + esc(arq.carta) + '</p></td></tr></table>' +
     '<p style="font-size:15px;line-height:1.6;margin:0 0 12px">Preparamos tu mensaje con cuidado, a partir de lo que estás viviendo y de lo que tu alma necesita escuchar. <b>Lo encontrás adjunto en PDF.</b></p>' +
     '<p style="font-size:15px;line-height:1.6;margin:0 0 12px">Te recomendamos leerlo en un momento tranquilo, sin apuro. Y si algo te resuena, guardalo. Es para vos.</p>' +
-    (personal ? '<p style="font-size:15px;line-height:1.6;margin:0 0 12px;background:#f2ecf7;border-left:3px solid ' + oro + ';padding:10px 12px">En las próximas <b>48 horas</b> te escribimos por WhatsApp con un audio grabado solo para vos.</p>' : '') +
+    (personal ? '<p style="font-size:15px;line-height:1.6;margin:0 0 12px">También te adjuntamos <b>el audio de tu arquetipo</b>, para escucharlo con calma.</p>' : '') + (personal ? '<p style="font-size:15px;line-height:1.6;margin:0 0 12px;background:#f2ecf7;border-left:3px solid ' + oro + ';padding:10px 12px">En las próximas <b>48 horas</b> te escribimos por WhatsApp con un audio grabado solo para vos.</p>' : '') +
     '<p style="font-size:15px;font-style:italic;color:' + suave + ';margin:20px 0 4px">Con cariño,</p>' +
     '<p style="font-size:16px;color:' + violeta + ';margin:0 0 20px">Test de Alma</p></td></tr>' +
     '<tr><td style="background:#f2ecf7;padding:14px 28px;font-size:11px;line-height:1.5;color:' + suave + '">Este mensaje es una experiencia de reflexión simbólica y acompañamiento espiritual. No constituye asesoramiento médico, psicológico, legal ni financiero. Si estás atravesando un momento que sentís que te supera, buscar acompañamiento profesional es un acto de amor propio.</td></tr>' +
