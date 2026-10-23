@@ -14,6 +14,8 @@
  *   MP_ACCESS_TOKEN  Access token de producción de Mercado Pago (Tu negocio > Credenciales)
  *   SITIO_URL        Dirección de la web, por ejemplo https://diematarin.github.io/test-de-alma/
  *   AVISOS_EMAIL     Email donde quieres recibir los pedidos del Mensaje personal
+ *   WHATSAPP_NUMERO  Tu número para los avisos por WhatsApp, con código de país (ej. 5491122334455)
+ *   WHATSAPP_CLAVE   La clave que te da CallMeBot (servicio gratis) al activar los avisos
  * El token nunca se escribe en el código ni en la web.
  */
 
@@ -168,6 +170,20 @@ function enviarResultado(fila, col) {
       '\nArquetipo: ' + arq.nombre + ' (' + arq.carta + ')\nPerdió a alguien: ' + (perdida ? 'sí' : 'no') +
       '\nRespuestas: ' + fila[col('respuestas')] + '\n\nPlazo: 48 horas.');
   }
+
+  avisoWhatsApp(personal
+    ? '🌙 Nuevo MENSAJE PERSONAL\n' + nombre + ' - ' + arq.nombre + '\nWhatsApp: ' + fila[col('telefono')] + '\nPerdió a alguien: ' + (perdida ? 'sí' : 'no') + '\nPlazo: 48 h'
+    : '✨ Nuevo test común\n' + nombre + ' - ' + arq.nombre);
+}
+
+// Aviso a tu WhatsApp con CallMeBot (gratis, solo para tu propio número).
+function avisoWhatsApp(texto) {
+  const numero = prop('WHATSAPP_NUMERO'), clave = prop('WHATSAPP_CLAVE');
+  if (!numero || !clave) return;
+  try {
+    UrlFetchApp.fetch('https://api.callmebot.com/whatsapp.php?phone=' + encodeURIComponent(numero) +
+      '&text=' + encodeURIComponent(texto) + '&apikey=' + encodeURIComponent(clave), { muteHttpExceptions: true });
+  } catch (e) { console.log('Aviso WhatsApp falló: ' + e); }
 }
 
 function esc(s) {
