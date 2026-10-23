@@ -136,7 +136,7 @@ function enviarResultado(fila, col) {
   const nombre = fila[col('nombre')];
   const perdida = fila[col('perdida')] === 'si';
   const personal = fila[col('producto')] === 'personalizado';
-  const html = pdfHtml(nombre, arq, perdida);
+  const html = pdfHtml(nombre, arq, perdida, fila[col('producto')]);
   const pdf = Utilities.newBlob(html, 'text/html', 'mensaje.html').getAs('application/pdf').setName('Tu mensaje del alma - ' + arq.nombre + '.pdf');
 
   let cuerpo = 'Hola ' + nombre + ',\n\nGracias por hacer el Test de Alma. Tu arquetipo es ' + arq.nombre +
@@ -157,17 +157,112 @@ function esc(s) {
   return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-function pdfHtml(nombre, arq, perdida) {
-  const parrafos = arq.texto.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿"“])/);
-  let grupos = '';
-  for (let i = 0; i < parrafos.length; i += 4) grupos += '<p>' + esc(parrafos.slice(i, i + 4).join(' ')) + '</p>';
-  return '<html><body style="font-family:Georgia,serif;color:#2a2238;line-height:1.6;padding:24px">' +
-    '<p style="letter-spacing:2px;font-size:11px;color:#8a6d1f">TEST DE ALMA · ' + esc(nombre).toUpperCase() + '</p>' +
-    '<h1 style="font-size:30px;margin:4px 0">' + esc(arq.nombre) + '</h1>' +
-    '<p style="font-style:italic;color:#6b6080">Tu carta: ' + esc(arq.carta) + '. ' + esc(arq.significado) + '</p>' +
-    grupos +
-    '<h2 style="font-size:20px;color:#8a6d1f;margin-top:28px">El mensaje de ' + esc(arq.carta) + '</h2><p>' + esc(arq.mensaje_extendido) + '</p>' +
-    (perdida ? '<h2 style="font-size:20px;color:#8a6d1f;margin-top:28px">Para quien partió</h2><p>' + esc(MENSAJE_DUELO) + '</p>' : '') +
-    '<p style="font-size:11px;color:#6b6080;margin-top:32px">Este test es una herramienta de reflexión personal y no reemplaza la ayuda de un profesional.</p>' +
+// ---------- PDF ----------
+// Las imágenes salen de la web (carpeta img/pdf) y van incrustadas en el PDF.
+
+function slug(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace('ermitano', 'ermitanio').replace(/\s+/g, '-');
+}
+
+function imagen(nombre) {
+  try {
+    const r = UrlFetchApp.fetch(prop('SITIO_URL') + 'img/pdf/' + nombre + '.jpg', { muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return '';
+    return 'data:image/jpeg;base64,' + Utilities.base64Encode(r.getBlob().getBytes());
+  } catch (e) {
+    return '';
+  }
+}
+
+function oraciones(t) {
+  return t.match(/[^.!?]+[.!?]+["”]?\s*/g) || [t];
+}
+
+// Separa el texto en: cuerpo, práctica de la semana y frase final.
+function partes(texto) {
+  let practica = '';
+  const i = texto.indexOf('Esta semana');
+  const j = i >= 0 ? texto.indexOf('No estás solo', i) : -1;
+  if (i >= 0 && j > i) {
+    practica = texto.slice(i, j).trim();
+    texto = texto.slice(0, i) + texto.slice(j);
+  }
+  const o = oraciones(texto).map(s => s.trim());
+  const cierre = o.slice(-2).join(' ');
+  const cuerpo = o.slice(0, -2);
+  const parrafos = [];
+  for (let k = 0; k < cuerpo.length; k += 4) parrafos.push(cuerpo.slice(k, k + 4).join(' '));
+  return { parrafos, practica, cierre };
+}
+
+function fechaLarga() {
+  const m = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const d = new Date();
+  return d.getDate() + ' de ' + m[d.getMonth()] + ' de ' + d.getFullYear();
+}
+
+function pdfHtml(nombre, arq, perdida, producto, imgs) {
+  imgs = imgs || { portada: imagen('portada'), carta: imagen(slug(arq.carta)) };
+  const p = partes(arq.texto);
+  const violeta = '#4a2a6b', oro = '#b48a2c', tinta = '#2b2433', suave = '#6d6378', papel = '#fbf8f2', lila = '#f2ecf7';
+  const sep = '<p style="text-align:center;color:' + oro + ';font-size:13pt;letter-spacing:8px;margin:18pt 0">✦ ✦ ✦</p>';
+  const titulo = (eyebrow, h) =>
+    '<p style="text-align:center;font-size:8.5pt;letter-spacing:3px;color:' + oro + ';margin:0 0 4pt 0">' + eyebrow + '</p>' +
+    '<h2 style="text-align:center;font-size:24pt;font-weight:normal;color:' + violeta + ';margin:0 0 6pt 0">' + h + '</h2>' +
+    '<p style="text-align:center;margin:0 0 18pt 0"><span style="display:inline-block;width:60pt;border-top:1px solid ' + oro + '"></span></p>';
+  const pagina = '<div style="page-break-before:always"></div>';
+
+  const cuerpo = p.parrafos.map((t, k) =>
+    '<p style="margin:0 0 11pt 0;text-align:justify">' +
+    (k === 0 ? '<span style="font-size:20pt;color:' + violeta + ';line-height:1">' + esc(t.charAt(0)) + '</span>' + esc(t.slice(1)) : esc(t)) +
+    '</p>').join('');
+
+  return '<html><head><meta charset="utf-8"></head>' +
+    '<body style="font-family:Georgia,\'Times New Roman\',serif;color:' + tinta + ';font-size:11pt;line-height:1.65;margin:0">' +
+
+    // Portada
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border:1.5px solid ' + oro + ';background:' + papel + '"><tr><td style="padding:34pt 30pt;text-align:center;height:690pt;vertical-align:middle">' +
+    (imgs.portada ? '<img src="' + imgs.portada + '" style="width:100%;max-width:440pt;border-radius:6pt">' : '') +
+    '<p style="font-size:9pt;letter-spacing:4px;color:' + oro + ';margin:34pt 0 6pt 0">TEST DE ALMA</p>' +
+    '<p style="font-size:12pt;font-style:italic;color:' + suave + ';margin:0">Un mensaje para</p>' +
+    '<h1 style="font-size:30pt;font-weight:normal;color:' + violeta + ';margin:2pt 0 0 0">' + esc(nombre) + '</h1>' +
+    sep +
+    '<table align="center" cellpadding="0" cellspacing="0"><tr>' +
+    (imgs.carta ? '<td style="padding-right:18pt;vertical-align:middle"><img src="' + imgs.carta + '" style="width:110pt;border:1px solid ' + oro + ';border-radius:5pt"></td>' : '') +
+    '<td style="text-align:left;vertical-align:middle">' +
+    '<p style="font-size:8.5pt;letter-spacing:3px;color:' + oro + ';margin:0">TU ARQUETIPO</p>' +
+    '<p style="font-size:22pt;color:' + violeta + ';margin:2pt 0 6pt 0;line-height:1.15">' + esc(arq.nombre) + '</p>' +
+    '<p style="font-size:10.5pt;color:' + suave + ';margin:0;font-style:italic">Tu carta: ' + esc(arq.carta) + '</p>' +
+    '</td></tr></table>' +
+    '<p style="font-size:9pt;color:' + suave + ';margin:40pt 0 0 0">' + fechaLarga() + '</p>' +
+    '</td></tr></table>' +
+
+    // Mensaje
+    pagina + titulo('TU MENSAJE', esc(arq.nombre)) + cuerpo +
+    (p.practica ?
+      '<table width="100%" cellpadding="0" cellspacing="0" style="margin:16pt 0"><tr><td style="background:' + lila + ';border-left:3px solid ' + oro + ';padding:14pt 18pt">' +
+      '<p style="font-size:8.5pt;letter-spacing:3px;color:' + oro + ';margin:0 0 6pt 0">TU PRÁCTICA DE ESTA SEMANA</p>' +
+      '<p style="margin:0">' + esc(p.practica) + '</p></td></tr></table>' : '') +
+    '<p style="text-align:center;font-size:15pt;font-style:italic;color:' + violeta + ';margin:22pt 30pt 0 30pt;line-height:1.5">“' + esc(p.cierre) + '”</p>' +
+
+    // Carta
+    pagina + titulo('TU CARTA DEL TAROT', esc(arq.carta)) +
+    (imgs.carta ? '<p style="text-align:center;margin:0 0 14pt 0"><img src="' + imgs.carta + '" style="width:170pt;border:1.5px solid ' + oro + ';border-radius:8pt"></p>' : '') +
+    '<p style="text-align:center;font-style:italic;color:' + suave + ';font-size:12pt;margin:0 0 16pt 0">' + esc(arq.significado) + '</p>' +
+    '<p style="text-align:justify;margin:0 30pt">' + esc(arq.mensaje_extendido) + '</p>' +
+
+    // Duelo
+    (perdida ? pagina + titulo('PARA QUIEN PARTIÓ', 'El amor no se va') +
+      '<p style="text-align:center;font-size:13pt;font-style:italic;line-height:1.8;margin:10pt 40pt">' + esc(MENSAJE_DUELO) + '</p>' + sep : '') +
+
+    // Cierre
+    (perdida ? '' : pagina) +
+    (producto === 'personalizado' ?
+      '<table width="100%" cellpadding="0" cellspacing="0" style="margin:' + (perdida ? '10pt' : '0') + ' 0 18pt 0"><tr><td style="border:1px solid ' + oro + ';padding:14pt 18pt;text-align:center">' +
+      '<p style="font-size:8.5pt;letter-spacing:3px;color:' + oro + ';margin:0 0 6pt 0">TU MENSAJE PERSONAL</p>' +
+      '<p style="margin:0">En las próximas 48 horas te escribimos por WhatsApp con un audio grabado solo para vos, a partir de tus respuestas.</p></td></tr></table>' : '') +
+    '<p style="text-align:center;font-style:italic;color:' + suave + ';margin:' + (perdida ? '10pt' : '120pt') + ' 0 4pt 0">Con cariño,</p>' +
+    '<p style="text-align:center;font-size:14pt;color:' + violeta + ';margin:0 0 30pt 0">Test de Alma</p>' +
+    '<p style="font-size:8pt;color:' + suave + ';text-align:center;line-height:1.5;margin:0 30pt">Este mensaje es una experiencia de reflexión simbólica y acompañamiento espiritual. No constituye asesoramiento médico, psicológico, legal ni financiero. Si estás atravesando un momento que sentís que te supera, buscar acompañamiento profesional es un acto de amor propio.</p>' +
     '</body></html>';
 }
