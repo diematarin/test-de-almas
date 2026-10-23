@@ -146,7 +146,7 @@ const DATA = {"version": 2, "fecha": "2026-10-22", "titulo": "Test de Alma", "de
 const CARDS = {"el carro": "img/el-carro.webp", "el colgado": "img/el-colgado.webp", "el diablo": "img/el-diablo.webp", "el emperador": "img/el-emperador.webp", "el ermitanio": "img/el-ermitanio.webp", "el juicio": "img/el-juicio.webp", "el loco": "img/el-loco.webp", "el mago": "img/el-mago.webp", "el mundo": "img/el-mundo.webp", "el papa": "img/el-papa.webp", "el sol": "img/el-sol.webp", "la emperatriz": "img/la-emperatriz.webp", "la estrella": "img/la-estrella.webp", "la fuerza": "img/la-fuerza.webp", "la justicia": "img/la-justicia.webp", "la luna": "img/la-luna.webp", "la muerte": "img/la-muerte.webp", "la rueda": "img/la-rueda.webp", "la sacerdotisa": "img/la-sacerdotisa.webp", "la templanza": "img/la-templanza.webp", "la torre": "img/la-torre.webp", "los enamorados": "img/los-enamorados.webp"};
 const COVER = "img/portada.webp";
 // Dirección del Apps Script que crea el pago en Mercado Pago. Vacía = modo prototipo.
-const PAGOS = {"endpoint": "https://script.google.com/macros/s/AKfycbx6nO0QMsNYfx266x_4PEGNINbNq2la00x0bxNUg7bDaJMWyHLOT9v3SEG0m08Xn2tEVA/exec"};
+const PAGOS = {"endpoint": "https://script.google.com/macros/s/AKfycbwVhwkPa7MJHKfmJ1ExAX5nm6db8sIez1pFVFI8T1pa7fFtPV5E7q2CLODUiYiodrcuLw/exec"};
 const ars = n => "$ " + n.toLocaleString("es-AR");
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 
