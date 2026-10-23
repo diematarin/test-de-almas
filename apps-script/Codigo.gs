@@ -16,6 +16,7 @@
  *   AVISOS_EMAIL     Email donde quieres recibir los pedidos del Mensaje personal
  *   WHATSAPP_NUMERO  Tu número para los avisos por WhatsApp, con código de país (ej. 5491122334455)
  *   WHATSAPP_CLAVE   La clave que te da CallMeBot (servicio gratis) al activar los avisos
+ *   NTFY_TEMA        Nombre secreto del canal de la app ntfy para recibir avisos en el celular
  * El token nunca se escribe en el código ni en la web.
  */
 
@@ -176,8 +177,14 @@ function enviarResultado(fila, col) {
     : '✨ Nuevo test común\n' + nombre + ' - ' + arq.nombre);
 }
 
-// Aviso a tu WhatsApp con CallMeBot (gratis, solo para tu propio número).
+// Aviso al celular: app ntfy (gratis) y/o WhatsApp con CallMeBot (gratis, solo para tu propio número).
 function avisoWhatsApp(texto) {
+  const tema = prop('NTFY_TEMA');
+  if (tema) {
+    try {
+      UrlFetchApp.fetch('https://ntfy.sh/' + encodeURIComponent(tema), { method: 'post', payload: texto, muteHttpExceptions: true });
+    } catch (e) { console.log('Aviso ntfy falló: ' + e); }
+  }
   const numero = prop('WHATSAPP_NUMERO'), clave = prop('WHATSAPP_CLAVE');
   if (!numero || !clave) return;
   try {
