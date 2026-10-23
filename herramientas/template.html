@@ -272,6 +272,7 @@ function renderResult() {
   const p = DATA.productos;
   app.innerHTML = `
   <div class="screen stack" style="gap:24px">
+    ${unlocked ? `
     <span class="eyebrow">${esc(user.nombre)}, tu arquetipo es</span>
     <div class="reveal">
       <div class="card">${img ? `<img src="${img}" alt="Carta ${esc(a.carta)}">` : esc(a.carta)}</div>
@@ -280,9 +281,15 @@ function renderResult() {
         <p class="small muted">Tu carta: <span style="color:var(--gold)">${esc(a.carta)}</span></p>
         <p class="sig">${esc(a.significado)}</p>
       </div>
+    </div>` + fullResult(a) : `
+    <span class="eyebrow">${esc(user.nombre)}, tu lectura está lista</span>
+    <div class="reveal">
+      <div class="card" aria-label="Carta boca abajo" style="font-size:2.4rem;background:repeating-linear-gradient(45deg,var(--surface),var(--surface) 8px,#2b2340 8px,#2b2340 16px)">✦</div>
+      <div class="stack" style="gap:8px">
+        <h2 class="arq">Tu arquetipo te espera</h2>
+        <p class="sig">Entre 22 arquetipos del alma, tus respuestas señalaron uno. Y una carta del tarot que te acompaña en este momento.</p>
+      </div>
     </div>
-    ${unlocked ? fullResult(a) : `
-    <div class="teaser"><div class="fade">${esc(teaser)}</div></div>
     <div class="stack" style="gap:6px">
       <h3 style="font-size:1.5rem">Tu mensaje completo te espera</h3>
       <p class="muted small">Elegí cómo querés recibirlo.</p>
@@ -290,7 +297,7 @@ function renderResult() {
     <div class="offers">
       <div class="offer">
         <div class="offer-head"><h3>Mensaje del alma</h3><span class="price">${ars(p.basico.precio_ars)}</span></div>
-        <ul><li>Tu arquetipo explicado en profundidad</li><li>El mensaje de ${esc(a.carta)} para vos</li>${hadLoss() ? "<li>Un mensaje para tu duelo</li>" : ""}<li>PDF en tu email al instante</li></ul>
+        <ul><li>Tu arquetipo explicado en profundidad</li><li>Tu carta del tarot y su mensaje para vos</li>${hadLoss() ? "<li>Un mensaje para tu duelo</li>" : ""}<li>PDF en tu email al instante</li></ul>
         <button class="btn ghost" data-buy="basico">Quiero mi mensaje</button>
       </div>
       <div class="offer featured">
